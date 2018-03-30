@@ -41,7 +41,7 @@ before_script:
   - if [ "$CC" = "clang" ]; then
       CONFIGURE_OPTS="$CONFIGURE_OPTS --disable-mongodb" ;
     fi
-  - ./dbld/rules bootstrap CONFIGURE_OPTS=$CONFIGURE_OPTS
+  - ./dbld/rules bootstrap CONFIGURE_OPTS="$CONFIGURE_OPTS"
 script:
   - ./dbld/rules make-check MAKE_ARGS=-j4
 compiler:
