@@ -9,41 +9,16 @@ os: linux
 cache:
   apt: true
 
+sudo: required
+
+services:
+  - docker
+
 install:
-  - curl -4 http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04/Release.key | sudo apt-key add -
-  - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq
-      autoconf-archive
-      bison
-      docbook-xsl
-      flex
-      gradle-2.2.1
-      libcap-dev
-      libdbd-sqlite3
-      libdbi0-dev
-      libesmtp-dev
-      libgeoip-dev
-      libglib2.0-dev
-      libhiredis-dev
-      libivykis-dev
-      libjson0-dev
-      libnet1-dev
-      libriemann-client-dev
-      libwrap0-dev
-      pkg-config
-      sqlite3
-      xsltproc
-      criterion-dev
-      libmaxminddb-dev
-      libxml2-utils
-  - sudo pip install -r requirements.txt
+  - docker version
+  - ./dbld/rules image
 before_script:
-  - echo 'Europe/Budapest' | sudo tee /etc/timezone
-  - sudo dpkg-reconfigure --frontend noninteractive tzdata
-  - ./autogen.sh
-  - unset PYTHON_CFLAGS # HACK
-  - CONFIGURE_FLAGS="
+  - CONFIGURE_OPTS="
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
       --with-ivykis=internal
@@ -64,144 +39,14 @@ before_script:
       --enable-extra-warnings
       "
   - if [ "$CC" = "clang" ]; then
-      CONFIGURE_FLAGS="$CONFIGURE_FLAGS --disable-mongodb" ;
+      CONFIGURE_OPTS="$CONFIGURE_OPTS --disable-mongodb" ;
     fi
-  - ./configure $CONFIGURE_FLAGS
+  - ./dbld/rules bootstrap CONFIGURE_OPTS=$CONFIGURE_OPTS
 script:
-  - . tests/build-log-cflags-propagation.sh;
-    if [ "$CC" = "gcc" ]; then
-      export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
-      exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
-      {
-        S=$?;
-        make V=1 distcheck;
-        find . -name test-suite.log |
-        xargs cat;
-        return $S;
-      };
-      find . -name test-suite.log | xargs cat;
-    else
-      make --keep-going -j 3;
-      S=$?;
-      if [ "$S" = "0" ]; then
-        make install
-        . scripts/get-libjvm-path.sh || return $?;
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-        make func-test V=1;
-      elif [ "$S" = "42" ]; then
-        return $S;
-      else
-        make V=1 install;
-        return $S;
-      fi;
-    fi
+  - ./dbld/rules make-check MAKE_ARGS=-j4
 compiler:
   - gcc
   - clang
-
-matrix:
-  fast_finish: true
-  allow_failures:
-    - os: osx
-  include:
-    - env: B=style-check
-      dist: trusty
-      sudo: required
-      install:
-      - curl -4 http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04/Release.key | sudo apt-key add -
-      - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
-      - sudo apt-get update -qq
-      - sudo apt-get install -qq
-          astyle
-      before_script:
-      - astyle --version
-      script:
-      - scripts/style-checker.sh format
-      - git diff --exit-code
-    - env: B=copyright-check
-      sudo: false
-      compiler: gcc
-      install:
-      before_script:
-      script:
-        - export COPYRIGHTVERBOSITY=1
-        - tests/copyright/check.sh . .
-    - env: B=trusty-cmake-internal
-      compiler: gcc
-      dist: trusty
-      sudo: required
-      before_script:
-      git:
-        submodules: true
-      script:
-        - mkdir build
-        - cd build
-        - cmake
-            -DCMAKE_C_FLAGS=-Werror
-            -DPYTHON_VERSION=2
-            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
-            ..
-        - make --keep-going -j $(nproc) all test install
-        - make VERBOSE=1 func-test
-    - env: B=trusty-cmake
-      compiler: clang
-      dist: trusty
-      sudo: required
-      before_script:
-      script:
-        - mkdir build
-        - cd build
-        - cmake
-            -DCMAKE_C_FLAGS=-Werror
-            -DPYTHON_VERSION=2
-            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
-            ..
-        - make --keep-going -j $(nproc) all test install
-    - env: B=check
-      os: osx
-      osx_image: xcode8
-      compiler: clang
-      install:
-        - brew update
-        - brew install
-            autoconf-archive
-            binutils
-            bison
-            geoip
-            geoipupdate
-            glib
-            gradle
-            hiredis
-            libdbi
-            libnet
-            riemann-client
-        - geoipupdate
-        - pip install -r requirements.txt
-        - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PATH
-        - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
-      before_script:
-        - ./autogen.sh
-        - ./configure
-            --disable-sun-streams
-            --disable-systemd
-            --disable-pacct
-            --enable-all-modules
-            --disable-smtp
-        - make --keep-going -j 3 ||
-          {
-            S=$?;
-            make V=1;
-            return $S;
-          }
-      script:
-        - make --keep-going check ||
-          {
-            S=$?;
-            make V=1 check;
-            find . -name test-suite.log |
-            xargs cat;
-            return $S;
-          }
 
 branches:
   except:
