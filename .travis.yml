@@ -16,7 +16,7 @@ services:
 
 install:
   - docker version
-  - ./dbld/rules image
+  - docker pull balabit/syslog-ng-xenial
 before_script:
   - CONFIGURE_OPTS="
       CFLAGS=-Werror
