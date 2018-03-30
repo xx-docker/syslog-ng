@@ -43,7 +43,7 @@ before_script:
     fi
   - ./dbld/rules bootstrap CONFIGURE_OPTS="$CONFIGURE_OPTS"
 script:
-  - ./dbld/rules make-check MAKE_ARGS=-j4
+  - ./dbld/rules distcheck MAKE_ARGS=-j4
 compiler:
   - gcc
   - clang

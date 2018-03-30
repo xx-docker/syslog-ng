@@ -101,7 +101,8 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
-	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	docker pull balabit/syslog-ng-$* || true
+	cd $(DBLD_DIR)/images/ && $(DOCKER) build --cache-from=balabit/syslog-ng-$* --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 login: login-$(DEFAULT_IMAGE)
 login-%: setup
