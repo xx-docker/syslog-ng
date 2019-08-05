@@ -7,8 +7,10 @@ RUN yum -y install openssl openssl-devel glib2 glib2-devel \
  json-c json-c-devel
 ARG INSTALL_DIR=/usr/local/src/syslog-ng
 # Which version Install Then Add to which tard dir
-ADD . ${INSTALL_DIR}
-RUN cd ${INSTALL_DIR} && ./configure --prefix=/software/syslog-ng \
+WORKDIR ${INSTALL_DIR}
+RUN wget https://github.com/balabit/syslog-ng/releases/download/syslog-ng-3.22.1/syslog-ng-3.22.1.tar.gz && \
+  tar zxvf syslog-ng-3.22.1.tar.gz
+RUN cd syslog-ng-3.22.1 && ./configure --prefix=/software/syslog-ng \
 --enable-http \
 --enable-python \
 --with-python=3 && \
