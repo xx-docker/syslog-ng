@@ -1,6 +1,6 @@
 FROM centos:7
 
-RUN yum -y install make gcc gcc-c++ wget
+RUN yum -y install make gcc gcc-c++ wget curl curl-devel
 RUN yum -y install epel-release 
 RUN yum -y install python36 python36-devel python36-pip
 RUN yum -y install openssl openssl-devel glib2 glib2-devel \
