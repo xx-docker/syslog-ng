@@ -17,4 +17,7 @@ RUN cd syslog-ng-3.22.1 && ./configure --prefix=/software/syslog-ng \
 make && make install 
 RUN rm -rf ${INSTALL_DIR}
 
+# Add python-path 
+RUN echo 'export PYTHONPATH=$PYTHONPATH:/software/syslog-ng/intercepters' >> /etc/profile
+
 CMD ['/software/syslog-ng/sbin/syslog-ng', '-F']
